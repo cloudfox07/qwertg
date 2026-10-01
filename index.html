@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>五子棋对战</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+    background:#2c3e50;
+    color:#fff;
+    font-family:Microsoft Yahei;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding-top:40px;
+}
+.wrap{
+    display:flex;
+    gap:40px;
+    align-items:flex-start;
+}
+#panel{
+    background:#34495e;
+    padding:20px;
+    border-radius:12px;
+}
+#tip{
+    font-size:22px;
+    margin-bottom:15px;
+    text-align:center;
+}
+.btns{
+    display:flex;
+    gap:10px;
+    margin-bottom:15px;
+}
+button{
+    padding:9px 16px;
+    font-size:15px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    background:#3498db;
+    color:white;
+}
+button:hover{background:#2980b9;}
+#chessboard{
+    background:#deb887;
+    border:6px solid #8b5a2b;
+    display:grid;
+    grid-template-columns:repeat(15,36px);
+}
+.cell{
+    width:36px;
+    height:36px;
+    border:1px solid #bb9460;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+}
+.black-piece{
+    width:30px;height:30px;
+    border-radius:50%;
+    background:#111;
+    box-shadow:2px 2px 5px #000;
+}
+.white-piece{
+    width:30px;height:30px;
+    border-radius:50%;
+    background:#fff;
+    box-shadow:2px 2px 4px #aaa;
+}
+.info-box{
+    background:#34495e;
+    padding:20px;
+    border-radius:10px;
+}
+</style>
+</head>
+<body>
+    <h1>五子棋</h1>
+    <div class="wrap">
+        <div id="panel">
+            <div id="tip">黑棋先行</div>
+            <div class="btns">
+                <button id="restart">重新开局</button>
+                <button id="aiBtn">开启AI对手</button>
+            </div>
+            <div id="chessboard"></div>
+        </div>
+        <div class="info-box">
+            <h3>游戏说明</h3>
+            <p>1.黑棋先手落子</p >
+            <p>2.五颗连成一线即胜利</p >
+            <p>3.可开启AI和电脑下棋</p >
+        </div>
+    </div>
+
+<script>
+const size = 15;
+let board = Array(size).fill().map(()=>Array(size).fill(0));
+let turn = 1;
+let gameOver = false;
+let aiOpen = false;
+
+const boardDom = document.getElementById('chessboard');
+const tipDom = document.getElementById('tip');
+const restartBtn = document.getElementById('restart');
+const aiBtn = document.getElementById('aiBtn');
+
+function renderBoard(){
+    boardDom.innerHTML = '';
+    for(let y=0;y<size;y++){
+        for(let x=0;x<size;x++){
+            const div = document.createElement('div');
+            div.className = 'cell';
+            div.dataset.x = x;
+            div.dataset.y = y;
+            div.onclick = ()=>clickCell(x,y);
+            if(board[y][x]===1){
+                div.innerHTML = `<div class="black-piece"></div>`;
+            }else if(board[y][x]===2){
+                div.innerHTML = `<div class="white-piece"></div>`;
+            }
+            boardDom.appendChild(div);
+        }
+    }
+}
+
+function clickCell(x,y){
+    if(gameOver) return;
+    if(board[y][x]!==0) return;
+    if(aiOpen && turn===2) return;
+    putChess(x,y,turn);
+    if(checkWin(x,y,turn)){
+        tipDom.innerText = (turn===1?"黑棋":"白棋") + "获胜！";
+        gameOver = true;
+        return;
+    }
+    turn = turn===1?2:1;
+    tipDom.innerText = turn===1?"黑棋落子":"白棋落子";
+    if(aiOpen && turn===2 && !gameOver){
+        setTimeout(aiPlay,300);
+    }
+}
+
+function putChess(x,y,player){
+    board[y][x] = player;
+    renderBoard();
+}
+
+function aiPlay(){
+    let rx,ry;
+    outer:for(let i=0;i<size;i++){
+        for(let j=0;j<size;j++){
+            if(board[i][j]===0){
+                ry=i;rx=j;
+                break outer;
+            }
+        }
+    }
+    putChess(rx,ry,2);
+    if(checkWin(rx,ry,2)){
+        tipDom.innerText = "白棋(AI)获胜！";
+        gameOver=true;
+        return;
+    }
+    turn = 1;
+    tipDom.innerText = "黑棋落子";
+}
+
+function checkWin(cx,cy,player){
+    const dir = [[1,0],[0,1],[1,1],[1,-1]];
+    for(let [dx,dy] of dir){
+        let cnt=1;
+        for(let i=1;i<5;i++){
+            let nx=cx+dx*i, ny=cy+dy*i;
+            if(nx>=0&&nx<size&&ny>=0&&ny<size&&board[ny][nx]===player) cnt++; else break;
+        }
+        for(let i=1;i<5;i++){
+            let nx=cx-dx*i, ny=cy-dy*i;
+            if(nx>=0&&nx<size&&ny>=0&&ny<size&&board[ny][nx]===player) cnt++; else break;
+        }
+        if(cnt>=5) return true;
+    }
+    return false;
+}
+
+function resetGame(){
+    board = Array(size).fill().map(()=>Array(size).fill(0));
+    turn =1;
+    gameOver=false;
+    tipDom.innerText="黑棋先行";
+    renderBoard();
+}
+
+restartBtn.onclick = resetGame;
+aiBtn.onclick = function(){
+    aiOpen = !aiOpen;
+    aiBtn.innerText = aiOpen?"关闭AI对手":"开启AI对手";
+    resetGame();
+}
+renderBoard();
+</script>
+</body>
+</html>
